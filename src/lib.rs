@@ -27,7 +27,6 @@ const BT: usize = 64;
 const MBLK: usize = 8192;
 
 fn column_max(rg: &[f32], m: usize) -> Vec<f32> {
-    let acc = || vec![f32::NEG_INFINITY; m];
     let merge = |mut a: Vec<f32>, b: &[f32]| {
         for (x, &y) in a.iter_mut().zip(b) {
             if y > *x {
@@ -36,9 +35,13 @@ fn column_max(rg: &[f32], m: usize) -> Vec<f32> {
         }
         a
     };
-    rg.par_chunks(m)
-        .fold(acc, merge)
-        .reduce(acc, |a, b| merge(a, &b))
+    // A partial maximum per chunk of rows, not per row: each partial is an m-float vector.
+    let rows_per_chunk = (rg.len() / m)
+        .div_ceil(4 * rayon::current_num_threads())
+        .max(1);
+    rg.par_chunks(m * rows_per_chunk)
+        .map(|chunk| chunk.chunks(m).fold(vec![f32::NEG_INFINITY; m], merge))
+        .reduce(|| vec![f32::NEG_INFINITY; m], |a, b| merge(a, &b))
 }
 
 /// One response row as (column, rhs) pairs for the entries with rhs > 0, plus block offsets.
