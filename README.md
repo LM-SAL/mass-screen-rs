@@ -16,7 +16,7 @@ PyTorch mask.
 pip install mass-screen-rs
 ```
 
-Wheels are published for Linux (x86-64), macOS (arm64) and Windows, Python 3.13 to 3.15.
+Wheels are published for Linux (x86-64), macOS (arm64) and Windows, Python 3.12 to 3.15.
 
 ## Development
 

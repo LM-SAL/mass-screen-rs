@@ -53,6 +53,7 @@ jobs:
       toxdeps: tox-pypi-filter
       envs: |
         - linux: py315
+        - linux: py312
         - linux: codestyle
 
   sdist_verify:
@@ -117,9 +118,9 @@ jobs:
       test_extras: "tests"
       test_command: "pytest -p no:warnings --pyargs mass_screen_rs"
       targets: |
-        - cp3{13,14,15}-manylinux_x86_64
-        - cp3{13,14,15}-macosx_arm64
-        - cp3{13,14,15}-win_amd64
+        - cp3{12,13,14,15}-manylinux_x86_64
+        - cp3{12,13,14,15}-macosx_arm64
+        - cp3{12,13,14,15}-win_amd64
       submodules: false
       save_artifacts: true
       upload_to_pypi: false
