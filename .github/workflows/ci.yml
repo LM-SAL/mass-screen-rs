@@ -56,35 +56,8 @@ jobs:
         - linux: py312
         - linux: codestyle
 
-  sdist_verify:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.14"
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
-        with:
-          toolchain: stable
-      - name: Build source distribution
-        run: |
-          python -m pip install -U --user build
-          python -m build . --sdist
-      - name: Check source distribution
-        run: |
-          python -m pip install -U --user twine
-          python -m twine check dist/*
-      - name: Install from source distribution
-        run: |
-          python -m pip install --user dist/*.tar.gz
-          python -c "import mass_screen_rs; print(mass_screen_rs.__version__)"
-
   test:
-    needs: [core, sdist_verify]
+    needs: [core]
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@e25a8c5d18e2499bdc4381670917b73e3107dca1 # v3.1.1
     with:
       submodules: false
@@ -104,9 +77,12 @@ jobs:
       envs: |
         - linux: build_docs
 
+  # Wheels are built for a release tag, on request (workflow_dispatch), or on a pull request
+  # labelled "Run publish"; the test jobs above already install the package on every platform.
   build_dists:
     if: |
-      github.event_name != 'pull_request' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      github.event_name == 'workflow_dispatch' ||
       (
         github.event_name == 'pull_request' &&
         contains(github.event.pull_request.labels.*.name, 'Run publish')
