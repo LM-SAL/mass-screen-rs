@@ -56,8 +56,35 @@ jobs:
         - linux: py312
         - linux: codestyle
 
+  sdist_verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.14"
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # v1
+        with:
+          toolchain: stable
+      - name: Build source distribution
+        run: |
+          python -m pip install -U --user build
+          python -m build . --sdist
+      - name: Check source distribution
+        run: |
+          python -m pip install -U --user twine
+          python -m twine check dist/*
+      - name: Install from source distribution
+        run: |
+          python -m pip install --user dist/*.tar.gz
+          python -c "import mass_screen_rs; print(mass_screen_rs.__version__)"
+
   test:
-    needs: [core]
+    needs: [core, sdist_verify]
     uses: OpenAstronomy/github-actions-workflows/.github/workflows/tox.yml@e25a8c5d18e2499bdc4381670917b73e3107dca1 # v3.1.1
     with:
       submodules: false
