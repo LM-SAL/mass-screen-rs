@@ -1,0 +1,16 @@
+.DS_Store
+target
+__pycache__
+*.py[cod]
+*.so
+*.pyd
+*.egg-info
+.venv/
+.history
+.pytest_cache
+.claude
+docs/_build
+.ruff_cache
+.tox
+.tmp
+figure_test_images

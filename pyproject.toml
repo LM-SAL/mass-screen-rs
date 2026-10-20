@@ -1,0 +1,69 @@
+[build-system]
+requires = [
+  "maturin>=1.8,<2.0",
+]
+build-backend = "maturin"
+
+[project]
+name = "mass-screen-rs"
+version = "0.1.0"
+description = "Rust backend for the MUSE data-driven response mask (mass screen)"
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [
+  { name = "Nabil Freij", email = "nabil.freij@gmail.com" },
+]
+requires-python = ">=3.12"
+dependencies = [
+  "numpy>=2.0.0",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Rust",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.optional-dependencies]
+tests = [
+  "pytest",
+]
+dev = [
+  "mass-screen-rs[tests]",
+]
+
+[project.urls]
+Source = "https://github.com/LM-SAL/mass-screen-rs"
+Issues = "https://github.com/LM-SAL/mass-screen-rs/issues"
+
+[tool.maturin]
+python-source = "python"
+module-name = "mass_screen_rs._mass_screen_rs"
+exclude = [
+  ".github/**",
+  ".gitignore",
+  ".pre-commit-config.yaml",
+  ".clippy.toml",
+  "rustfmt.toml",
+  "ruff.toml",
+  "tox.ini",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["python/mass_screen_rs/tests"]
+
+[tool.cibuildwheel]
+build-frontend = "build"
+skip = ["pp*", "*-win32", "*-manylinux_i686"]
+test-extras = ["tests"]
+test-command = "pytest --pyargs mass_screen_rs"
+
+[tool.docformatter]
+recursive = true
+wrap-summaries = 100
+wrap-descriptions = 100
+pre-summary-newline = true
+close-quotes-on-newline = true
+make-summary-multi-line = true
+black = true

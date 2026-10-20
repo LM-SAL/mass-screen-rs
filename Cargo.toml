@@ -1,0 +1,22 @@
+[package]
+name = "mass-screen-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Rust backend for the MUSE data-driven response mask (mass screen)"
+license = "BSD-3-Clause"
+repository = "https://github.com/LM-SAL/mass-screen-rs"
+readme = "README.md"
+
+[lib]
+name = "mass_screen_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+numpy = "0.28"
+pyo3 = { version = "0.28", features = ["extension-module"] }
+rayon = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = "symbols"
