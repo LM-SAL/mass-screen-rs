@@ -12,8 +12,8 @@ name = "mass_screen_rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-numpy = "0.28"
-pyo3 = { version = "0.28", features = ["extension-module"] }
+numpy = "0.30"
+pyo3 = { version = "0.30", features = ["extension-module"] }
 rayon = "1"
 
 [profile.release]
