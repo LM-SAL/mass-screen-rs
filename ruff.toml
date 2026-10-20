@@ -10,6 +10,7 @@ ignore = [
     "D203",    # incompatible with D211 (no-blank-line-before-class)
     "D212",    # incompatible with D213; docformatter uses pre-summary-newline (D213 style)
     "D417",    # missing arg descriptions — some params documented via cross-ref
+    "INP001",  # implicit namespace package — docs/conf.py is not a package
     "PLR0913", # too-many-arguments — physics APIs unavoidably have many params
     "RUF002",  # σ, χ etc. are intentional scientific symbols, not lookalike chars
     "RUF003",  # same for comments
