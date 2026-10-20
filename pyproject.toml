@@ -26,22 +26,30 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+docs = [
+  "sphinx>=8",
+  "furo",
+  "sphinx-copybutton",
+]
 tests = [
   "pytest",
 ]
 dev = [
-  "mass-screen-rs[tests]",
+  "mass-screen-rs[tests,docs]",
 ]
 
 [project.urls]
 Source = "https://github.com/LM-SAL/mass-screen-rs"
 Issues = "https://github.com/LM-SAL/mass-screen-rs/issues"
+Documentation = "https://mass-screen-rs.readthedocs.io"
 
 [tool.maturin]
 python-source = "python"
 module-name = "mass_screen_rs._mass_screen_rs"
 exclude = [
   ".github/**",
+  "docs/**",
+  ".readthedocs.yaml",
   ".gitignore",
   ".pre-commit-config.yaml",
   ".clippy.toml",

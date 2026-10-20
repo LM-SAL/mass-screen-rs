@@ -1,5 +1,5 @@
 """
-mass-screen-rs: the MUSE data-driven response mask, in Rust.
+The MUSE data-driven response mask (mass screen), in Rust.
 """
 
 from importlib.metadata import version as _get_version

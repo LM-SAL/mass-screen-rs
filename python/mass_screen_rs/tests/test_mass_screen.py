@@ -9,7 +9,9 @@ from mass_screen_rs import mass_screen
 
 
 def reference(response, spectra, threshold, fill_value):
-    """Evaluate the mask rule in numpy, one cell at a time."""
+    """
+    Evaluate the mask rule in numpy, one cell at a time.
+    """
     response = np.asarray(response, dtype=np.float32)
     spectra = np.asarray(spectra, dtype=np.float32)
     spectra = np.where(spectra <= 0, np.float32(fill_value), spectra)
