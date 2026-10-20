@@ -128,65 +128,71 @@ pub fn mass_screen_core(
     order.sort_by(|&i, &j| rows[j].score.total_cmp(&rows[i].score));
     let keep_ptr = SyncPtr(keep.as_mut_ptr());
 
-    (0..ntiles * nblocks).into_par_iter().for_each(|task| {
-        let (t, q) = (task / nblocks, task % nblocks);
-        let b0 = t * BT;
-        let bt = BT.min(b - b0);
-        let m0 = q * MBLK;
-        let mb = MBLK.min(m - m0);
-        // fail[j * BT + k] != 0 once column m0 + j is masked for image pixel b0 + k.
-        let mut fail = vec![0u8; mb * BT];
-        let dead_lo = dead_cols.partition_point(|&j| (j as usize) < m0);
-        let dead_hi = dead_cols.partition_point(|&j| (j as usize) < m0 + mb);
-        for &j in &dead_cols[dead_lo..dead_hi] {
-            fail[(j as usize - m0) * BT..][..BT].fill(1);
-        }
-        let mut ybuf = [f32::INFINITY; BT]; // lanes past bt never fail
-        let mut since_recount = 0usize;
-        for &i in &order {
-            let row = &rows[i];
-            let (lo, hi) = (row.blk[q] as usize, row.blk[q + 1] as usize);
-            if lo == hi {
-                continue;
+    // One flag block per worker, reused across its tasks: a fresh zeroed block per task costs
+    // a page fault per 4 KiB and showed as a 50 % slowdown on 32 threads.
+    (0..ntiles * nblocks).into_par_iter().for_each_init(
+        || vec![0u8; MBLK * BT],
+        |fail, task| {
+            let (t, q) = (task / nblocks, task % nblocks);
+            let b0 = t * BT;
+            let bt = BT.min(b - b0);
+            let m0 = q * MBLK;
+            let mb = MBLK.min(m - m0);
+            // fail[j * BT + k] != 0 once column m0 + j is masked for image pixel b0 + k.
+            let fail = &mut fail[..mb * BT];
+            fail.fill(0);
+            let dead_lo = dead_cols.partition_point(|&j| (j as usize) < m0);
+            let dead_hi = dead_cols.partition_point(|&j| (j as usize) < m0 + mb);
+            for &j in &dead_cols[dead_lo..dead_hi] {
+                fail[(j as usize - m0) * BT..][..BT].fill(1);
             }
-            let mut ymin = f32::INFINITY;
-            for (yb, &y) in ybuf[..bt].iter_mut().zip(&ys[i * b + b0..i * b + b0 + bt]) {
-                *yb = if y <= 0.0 { fill_value } else { y };
-                ymin = ymin.min(*yb);
-            }
-            if ymin >= row.max_val {
-                continue; // no pixel of this tile is below any rhs of this row
-            }
-            for (&j, &v) in row.idx[lo..hi].iter().zip(&row.val[lo..hi]) {
-                let f = &mut fail[(j as usize - m0) * BT..][..BT];
-                for (f, &y) in f.iter_mut().zip(&ybuf) {
-                    *f |= u8::from(y < v);
+            let mut ybuf = [f32::INFINITY; BT]; // lanes past bt never fail
+            let mut since_recount = 0usize;
+            for &i in &order {
+                let row = &rows[i];
+                let (lo, hi) = (row.blk[q] as usize, row.blk[q + 1] as usize);
+                if lo == hi {
+                    continue;
                 }
-            }
-            // Stop once every column of the block has failed for every pixel of the tile. The
-            // check costs one pass over fail, so it runs once per ~4 passes' worth of updates.
-            since_recount += hi - lo;
-            if since_recount >= 4 * mb {
-                since_recount = 0;
-                let mut all_failed = [1u8; BT];
-                for col in fail.chunks_exact(BT) {
-                    for (a, &f) in all_failed.iter_mut().zip(col) {
-                        *a &= f;
+                let mut ymin = f32::INFINITY;
+                for (yb, &y) in ybuf[..bt].iter_mut().zip(&ys[i * b + b0..i * b + b0 + bt]) {
+                    *yb = if y <= 0.0 { fill_value } else { y };
+                    ymin = ymin.min(*yb);
+                }
+                if ymin >= row.max_val {
+                    continue; // no pixel of this tile is below any rhs of this row
+                }
+                for (&j, &v) in row.idx[lo..hi].iter().zip(&row.val[lo..hi]) {
+                    let f = &mut fail[(j as usize - m0) * BT..][..BT];
+                    for (f, &y) in f.iter_mut().zip(&ybuf) {
+                        *f |= u8::from(y < v);
                     }
                 }
-                if all_failed[..bt].iter().all(|&a| a == 1) {
-                    break;
+                // Stop once every column of the block has failed for every pixel of the tile. The
+                // check costs one pass over fail, so it runs once per ~4 passes' worth of updates.
+                since_recount += hi - lo;
+                if since_recount >= 4 * mb {
+                    since_recount = 0;
+                    let mut all_failed = [1u8; BT];
+                    for col in fail.chunks_exact(BT) {
+                        for (a, &f) in all_failed.iter_mut().zip(col) {
+                            *a &= f;
+                        }
+                    }
+                    if all_failed[..bt].iter().all(|&a| a == 1) {
+                        break;
+                    }
                 }
             }
-        }
-        for k in 0..bt {
-            // SAFETY: tasks write disjoint rectangles [b0 + k, m0..m0 + mb] of keep.
-            let out = unsafe { slice::from_raw_parts_mut(keep_ptr.add((b0 + k) * m + m0), mb) };
-            for (j, o) in out.iter_mut().enumerate() {
-                *o = if fail[j * BT + k] != 0 { f32::NAN } else { 1.0 };
+            for k in 0..bt {
+                // SAFETY: tasks write disjoint rectangles [b0 + k, m0..m0 + mb] of keep.
+                let out = unsafe { slice::from_raw_parts_mut(keep_ptr.add((b0 + k) * m + m0), mb) };
+                for (j, o) in out.iter_mut().enumerate() {
+                    *o = if fail[j * BT + k] != 0 { f32::NAN } else { 1.0 };
+                }
             }
-        }
-    });
+        },
+    );
 }
 
 /// Mask the VDEM components a set of spectra cannot constrain.
