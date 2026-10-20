@@ -31,5 +31,5 @@ prek run --all-files             # lint hooks (ruff, docformatter, cargo fmt, cl
 With `torch` installed, the parity test also checks a fresh random case against PyTorch directly,
 and `python -m mass_screen_rs.tests.make_torch_reference` re-records the reference.
 
-Releases: tag `vX.Y.Z` on `main`; the workflow builds the wheels and the sdist and uploads them to
-PyPI.
+Releases: bump `version` in `Cargo.toml` (the only place it is set), merge, then tag `vX.Y.Z` on
+`main`; the workflow builds the wheels and the sdist and uploads them to PyPI.
