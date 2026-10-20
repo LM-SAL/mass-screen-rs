@@ -32,16 +32,17 @@ The kernel keeps only the positive entries of each response row (a MUSE response
 runs the rows that mask most first, and updates the flags of 64 image pixels per entry with one
 vector compare. On a 16-core Ryzen 9 9950X:
 
-| Inputs (n × m, b)                          | C++/OpenMP kernel | mass-screen-rs | torch (GPU) |
-|--------------------------------------------|------------------:|---------------:|------------:|
-| real run, 3072 × 109585, 3216 pixels       |            27.9 s |         0.19 s |        59 s |
-| synthetic, 3072 × 246225, 4444 pixels      |           188.9 s |         0.85 s |             |
-| synthetic, 3072 × 7035, 561 pixels         |            0.48 s |        0.006 s |             |
+| Inputs (n × m, b)                          | former C++/OpenMP kernel | mass-screen-rs | torch (GPU) |
+|--------------------------------------------|-------------------------:|---------------:|------------:|
+| real run, 3072 × 109585, 3216 pixels       |                   27.9 s |         0.17 s |        59 s |
+| synthetic, 3072 × 246225, 4444 pixels      |                  188.9 s |         0.53 s |             |
+| synthetic, 3072 × 7035, 561 pixels         |                   0.48 s |        0.006 s |             |
 
-The masks agree with the torch reference on every cell. The published wheels target the x86-64
-baseline (no `-march=native`) and are about 20 % slower than a native build. The kernel runs on all
-cores through rayon; `RAYON_NUM_THREADS` caps it, and on SMT machines the physical core count is
-slightly faster than the default.
+The masks agree with the torch reference on every cell. The speed-up is the algorithm, not the
+language: the same algorithm written in C++/OpenMP runs within a few percent of this kernel. The
+published wheels target the x86-64 baseline (no `-march=native`) and are about 30 % slower than a
+native build (0.26 s on the real run above, called from Python). The kernel runs on all cores
+through rayon; `RAYON_NUM_THREADS` caps it.
 
 ## Development
 
