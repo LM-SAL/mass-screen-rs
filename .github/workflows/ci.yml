@@ -104,9 +104,12 @@ jobs:
       envs: |
         - linux: build_docs
 
+  # Wheels are built for a release tag, on request (workflow_dispatch), or on a pull request
+  # labelled "Run publish"; the test jobs above already install the package on every platform.
   build_dists:
     if: |
-      github.event_name != 'pull_request' ||
+      startsWith(github.ref, 'refs/tags/v') ||
+      github.event_name == 'workflow_dispatch' ||
       (
         github.event_name == 'pull_request' &&
         contains(github.event.pull_request.labels.*.name, 'Run publish')
