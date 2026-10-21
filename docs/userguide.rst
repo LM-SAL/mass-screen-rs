@@ -50,5 +50,5 @@ Use in muse
 -----------
 
 ``muse.inversions.mask_response`` calls this kernel for ``backend="auto"`` and
-``backend="rust"`` (``"cpp"``, the name of the former C++ kernel, still selects it), and
+``backend="rust"`` (``"cpp"`` is accepted as an alias), and
 ``backend="cpu"`` or ``"gpu"`` run the PyTorch implementation instead.

@@ -8,10 +8,9 @@ either is a change to the decision.
 The PyTorch Reference Defines The Mask
 --------------------------------------
 
-- **Status:** resolved 2026-10-20.
 - **Owner:** Nabil Freij.
 - **Code:** ``src/screen.rs::mass_screen_core`` (``dead_cols`` and ``scale``).
-- **Tests encoding current behavior:**
+- **Tests:**
   ``python/mass_screen_rs/tests/test_torch_parity.py`` (a mask recorded from
   ``muse.inversions.inversions._mass_screen_eager``, and a live comparison when torch is
   installed), ``src/tests/screen.rs::zero_column_is_masked_and_fill_value_applies``.
@@ -27,11 +26,9 @@ response is nowhere positive is masked for every pixel.
 Rationale
 ~~~~~~~~~
 
-The C++ kernel this package replaces diverged from the reference in two places: it kept every
-component with no response at all, and it masked every component whose largest response was
-below ``1e-9`` (an epsilon guarding a division). On a real MUSE run those two cases covered 13.7 %
-of the mask cells. The reference is the documented algorithm, so the kernel follows it; the rule
-is scale-invariant, so no epsilon is needed.
+The reference is the documented algorithm, so the kernel follows it, edge cases included: a
+component with no positive response is masked, and no epsilon guards a small response, because
+the rule is scale-invariant and needs none.
 
 Cost
 ~~~~
@@ -42,10 +39,9 @@ from the reference. None did on a real run of 352 million cells, nor on the reco
 Sparse, Pixel-Major Kernel
 --------------------------
 
-- **Status:** resolved 2026-10-20.
 - **Owner:** Nabil Freij.
 - **Code:** ``src/screen.rs`` (``csr_row``, the task loop in ``mass_screen_core``).
-- **Tests encoding current behavior:**
+- **Tests:**
   ``src/tests/screen.rs::many_tiles_and_blocks_match_the_dense_rule``,
   ``python/mass_screen_rs/tests/test_mass_screen.py::test_matches_reference``.
 
@@ -67,26 +63,27 @@ Current Behavior
 Rationale
 ~~~~~~~~~
 
-The former kernel scaled the whole response once and then, for every image pixel, walked every
-entry of every row, recounting the surviving columns after each row. That streams the scaled
+A dense pass, walking every entry of every row for every image pixel, streams the scaled
 response (1.3 GB on a real run) once per pixel and does 97 % of its compares against zeros.
+Keeping only the positive entries removes the zero compares, and updating 64 pixels per entry
+reads the response once per tile of pixels rather than once per pixel.
 
 Performance
 ~~~~~~~~~~~
 
 On a 16-core Ryzen 9 9950X, 32 threads, masks identical in every cell:
 
-===================================  ===================  ===============  =================
-Inputs (n × m, b)                    former C++/OpenMP    mass-screen-rs   same algorithm in
-                                                                           C++/OpenMP
-===================================  ===================  ===============  =================
-real run, 3072 × 109585, 3216 px     27.9 s               0.17 s           0.19 s
-synthetic, 3072 × 246225, 4444 px    188.9 s              0.53 s           0.53 s
-synthetic, 3072 × 7035, 561 px       0.48 s               0.006 s          0.018 s
-===================================  ===================  ===============  =================
+===================================  ===============  ==============================
+Inputs (n × m, b)                    mass-screen-rs   same algorithm in C++/OpenMP
+===================================  ===============  ==============================
+real run, 3072 × 109585, 3216 px     0.17 s           0.19 s
+synthetic, 3072 × 246225, 4444 px    0.53 s           0.53 s
+synthetic, 3072 × 7035, 561 px       0.006 s          0.018 s
+===================================  ===============  ==============================
 
-The speed-up is the algorithm, not the language. The published wheels target baseline x86-64 and
-are about 30 % slower than a ``target-cpu=native`` build.
+The algorithm sets the speed, not the language: the same algorithm in C++/OpenMP is no faster.
+The published wheels target baseline x86-64 and are about 30 % slower than a
+``target-cpu=native`` build.
 
 Cost
 ~~~~
