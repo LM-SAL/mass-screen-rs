@@ -1,0 +1,1 @@
+Wheels are now published for Linux arm64 and for free-threaded CPython 3.14 and 3.15, where the module runs without the GIL, and one wheel per platform serves CPython 3.12 and later. On x86-64 CPUs with AVX2, the mask runs a build of its kernel compiled for AVX2.

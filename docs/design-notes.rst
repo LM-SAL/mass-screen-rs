@@ -82,11 +82,41 @@ synthetic, 3072 × 246225, 4444 px    188.9 s                0.53 s
 synthetic, 3072 × 7035, 561 px       0.48 s                 0.006 s
 ===================================  =====================  ===============
 
-The published wheels target baseline x86-64 and are about 30 % slower than a
-``target-cpu=native`` build.
+The x86-64 wheels run a build of the task loop compiled for AVX2 on CPUs that have it (see "AVX2
+At Runtime"). Before that build was added, they were about 30 % slower than a
+``target-cpu=native`` build; how much of that gap it closes has not been measured.
 
 Cost
 ~~~~
 
 The compressed rows and per-task flag blocks are extra memory: about 8 bytes per positive
 response entry, plus 512 KiB per worker thread.
+
+AVX2 At Runtime
+---------------
+
+- **Owner:** Nabil Freij.
+- **Code:** ``src/screen.rs`` (``Tasks::run``, ``Tasks::run_avx2``, ``has_avx2``).
+- **Tests:** ``src/tests/screen.rs::avx2_build_matches_the_baseline_build``.
+
+Current Behavior
+~~~~~~~~~~~~~~~~
+
+On x86-64 the task loop is compiled twice, for baseline x86-64 and for AVX2. Each call checks once
+whether the CPU has AVX2 and, if it does, runs the AVX2 build. The two builds give bit-identical
+masks: the loop only compares, takes minima and sets flags, so the vector width changes no result.
+Other architectures have one build.
+
+Rationale
+~~~~~~~~~
+
+The wheels have to run on any x86-64 CPU, so they cannot be compiled for ``target-cpu=native``.
+The flag updates are the hot loop, and AVX2 doubles their vector width over the SSE2 of baseline
+x86-64.
+
+Cost
+~~~~
+
+The task loop is in the extension twice, and ``mass_screen_with`` takes a flag the tests use to
+force the baseline build. Features beyond AVX2 that a ``target-cpu=native`` build may use, such as
+AVX-512, are not used.

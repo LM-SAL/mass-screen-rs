@@ -47,6 +47,9 @@ Threads
 
 The kernel runs on all cores through `rayon <https://github.com/rayon-rs/rayon>`_;
 ``RAYON_NUM_THREADS`` caps the thread count and must be set before the first call.
+The call releases the GIL, so other threads keep running; leave ``response`` and ``spectra``
+unchanged until it returns, as writing to an array that another thread is reading gives
+inconsistent results, as with NumPy.
 
 Use in muse
 -----------

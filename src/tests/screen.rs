@@ -1,4 +1,20 @@
-use crate::screen::{column_max, mass_screen_core, BT, MBLK};
+use crate::screen::{column_max, mass_screen_core, mass_screen_with, BT, MBLK};
+
+/// A response that is 5 % positive, and spectra of which about a quarter are <= 0.
+fn random_case(n: usize, m: usize, b: usize) -> (Vec<f32>, Vec<f32>) {
+    let mut seed = 12345u64;
+    let mut next = || {
+        seed = seed
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
+        (seed >> 40) as f32 / (1u64 << 24) as f32
+    };
+    let rg: Vec<f32> = (0..n * m)
+        .map(|_| if next() < 0.05 { next() } else { 0.0 })
+        .collect();
+    let ys: Vec<f32> = (0..n * b).map(|_| next() * 4.0 - 1.0).collect();
+    (rg, ys)
+}
 
 fn run(rg: &[f32], ys: &[f32], n: usize, m: usize, b: usize, fill: f32) -> Vec<f32> {
     let mut keep = vec![0.0; b * m];
@@ -35,17 +51,7 @@ fn zero_column_is_masked_and_fill_value_applies() {
 fn many_tiles_and_blocks_match_the_dense_rule() {
     // Exercises partial tiles (b % BT != 0) and several column blocks.
     let (n, m, b) = (7, 2 * MBLK + 5, 3 * BT + 9);
-    let mut seed = 12345u64;
-    let mut next = || {
-        seed = seed
-            .wrapping_mul(6364136223846793005)
-            .wrapping_add(1442695040888963407);
-        (seed >> 40) as f32 / (1u64 << 24) as f32
-    };
-    let rg: Vec<f32> = (0..n * m)
-        .map(|_| if next() < 0.05 { next() } else { 0.0 })
-        .collect();
-    let ys: Vec<f32> = (0..n * b).map(|_| next() * 4.0 - 1.0).collect();
+    let (rg, ys) = random_case(n, m, b);
     let keep = run(&rg, &ys, n, m, b, 0.25);
     let col_max = column_max(&rg, m);
     for bi in 0..b {
@@ -61,5 +67,22 @@ fn many_tiles_and_blocks_match_the_dense_rule() {
                 });
             assert_eq!(keep[bi * m + j] == 1.0, kept, "cell ({bi}, {j})");
         }
+    }
+}
+
+#[test]
+fn avx2_build_matches_the_baseline_build() {
+    // NaN spectra, and enough rows that the early-stop check runs; a threshold of 50 masks almost
+    // every cell, so tasks stop early. Off x86-64, and on a CPU without AVX2, both calls run the
+    // baseline build.
+    let (n, m, b) = (100, 2 * MBLK + 5, 3 * BT + 9);
+    let (rg, mut ys) = random_case(n, m, b);
+    ys.iter_mut().step_by(97).for_each(|y| *y = f32::NAN);
+    for threshold in [2.24, 50.0] {
+        let [mut baseline, mut avx2] = [vec![0.0f32; b * m], vec![0.0f32; b * m]];
+        mass_screen_with(&rg, &ys, &mut baseline, n, m, b, threshold, 0.25, false);
+        mass_screen_with(&rg, &ys, &mut avx2, n, m, b, threshold, 0.25, true);
+        let bits = |v: &[f32]| v.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
+        assert_eq!(bits(&baseline), bits(&avx2), "threshold {threshold}");
     }
 }

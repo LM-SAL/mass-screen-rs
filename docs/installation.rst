@@ -6,12 +6,14 @@ Requirements
 
 - Python >= 3.12
 - NumPy >= 2.0
-- Rust >= 1.85 and `maturin <https://github.com/PyO3/maturin>`_ (source builds only)
+- Rust >= 1.99 and `maturin <https://github.com/PyO3/maturin>`_ (source builds only)
 
 From PyPI
 ---------
 
-Wheels are published for Linux x86-64, macOS arm64 and Windows x86-64:
+Wheels are published for Linux x86-64 and arm64, macOS arm64 and Windows x86-64. One wheel per
+platform serves CPython 3.12 and later; free-threaded CPython 3.14 and 3.15 have their own wheels
+and run without the GIL:
 
 .. code-block:: bash
 
@@ -27,13 +29,15 @@ From source
    pip install maturin
    maturin develop --release
 
-The wheels target baseline x86-64 so they run everywhere. A source build with
+The x86-64 wheels target baseline x86-64 so they run on any x86-64 CPU, and switch to a build of
+the kernel compiled for AVX2 on CPUs that have it. A source build with
 
 .. code-block:: bash
 
    RUSTFLAGS="-C target-cpu=native" maturin develop --release
 
-is about 30 % faster on the machine it is built on; see "Performance" in the design notes.
+is compiled for the CPU it is built on, which can be faster still; see "Performance" in the design
+notes.
 
 Development
 -----------

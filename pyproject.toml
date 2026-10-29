@@ -55,7 +55,6 @@ exclude = [
   ".readthedocs.yaml",
   ".gitignore",
   ".pre-commit-config.yaml",
-  ".clippy.toml",
   "rustfmt.toml",
   "ruff.toml",
   "tox.ini",
@@ -65,7 +64,7 @@ exclude = [
 
 [tool.cibuildwheel]
 build-frontend = "build"
-skip = ["pp*", "*-win32", "*-manylinux_i686"]
+skip = ["*-win32", "*-manylinux_i686"]
 test-extras = ["tests"]
 test-command = "pytest --pyargs mass_screen_rs"
 
