@@ -58,10 +58,8 @@ exclude = [
   "rustfmt.toml",
   "ruff.toml",
   "tox.ini",
+  "pytest.ini",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["python/mass_screen_rs/tests"]
 
 [tool.cibuildwheel]
 build-frontend = "build"
