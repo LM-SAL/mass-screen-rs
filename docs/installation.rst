@@ -29,13 +29,15 @@ From source
    pip install maturin
    maturin develop --release
 
-The wheels target baseline x86-64 so they run everywhere. A source build with
+The x86-64 wheels target baseline x86-64 so they run on any x86-64 CPU, and switch to a build of
+the kernel compiled for AVX2 on CPUs that have it. A source build with
 
 .. code-block:: bash
 
    RUSTFLAGS="-C target-cpu=native" maturin develop --release
 
-is about 30 % faster on the machine it is built on; see "Performance" in the design notes.
+is compiled for the CPU it is built on, which can be faster still; see "Performance" in the design
+notes.
 
 Development
 -----------
