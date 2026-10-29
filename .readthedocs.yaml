@@ -7,15 +7,14 @@ build:
   os: ubuntu-lts-latest
   tools:
     python: "3.14"
-    rust: "1.86"
+  jobs:
+    # Read the Docs offers Rust up to 1.96 and Cargo.toml needs 1.99, so install stable with rustup.
+    pre_install:
+      - curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+    # Replaces python.install, so pip can find cargo: each job command runs in its own shell.
+    install:
+      - PATH="$HOME/.cargo/bin:$PATH" python -m pip install --no-cache-dir ".[docs]"
 
 sphinx:
   configuration: docs/conf.py
   fail_on_warning: true
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
