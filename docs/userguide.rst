@@ -11,13 +11,15 @@ is kept for a pixel and ``NaN`` where it is masked.
 
 .. code-block:: python
 
-   import numpy as np
-   from mass_screen_rs import mass_screen
+   >>> import numpy as np
+   >>> from mass_screen_rs import mass_screen
 
-   response = np.load("response.npy")   # [n, m], float32
-   spectra = np.load("spectra.npy")     # [n, b], float32
-   keep = mass_screen(response, spectra, threshold=2.24, fill_value=0.25)
-   print(f"{np.mean(keep == 1) * 100:.1f} % of the (pixel, component) cells are kept")
+   >>> rng = np.random.default_rng(0)
+   >>> response = rng.random((30, 70), dtype=np.float32)        # [n, m], float32
+   >>> spectra = 20 * rng.random((30, 1000), dtype=np.float32)  # [n, b], float32
+   >>> keep = mass_screen(response, spectra, threshold=2.24, fill_value=0.25)
+   >>> print(f"{np.mean(keep == 1) * 100:.1f} % of the (pixel, component) cells are kept")
+   14.4 % of the (pixel, component) cells are kept
 
 The rule
 --------

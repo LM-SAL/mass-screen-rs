@@ -19,4 +19,5 @@ rayon = "1"
 [profile.release]
 lto = true
 codegen-units = 1
-strip = "symbols"
+# Stripped builds fail to import on macOS 27 ("mis-aligned LINKEDIT string pool")
+strip = "none"

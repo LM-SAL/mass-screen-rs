@@ -1,0 +1,1 @@
+Building mass-screen-rs from source on macOS 27 now gives an extension that imports; stripped builds failed with "mis-aligned LINKEDIT string pool".

@@ -34,6 +34,7 @@ docs = [
 ]
 tests = [
   "pytest",
+  "pytest-doctestplus>=1.0.0",
 ]
 dev = [
   "mass-screen-rs[tests,docs]",
@@ -49,6 +50,7 @@ python-source = "python"
 module-name = "mass_screen_rs._mass_screen_rs"
 exclude = [
   ".github/**",
+  "changelog/**",
   "docs/**",
   ".readthedocs.yaml",
   ".gitignore",
@@ -57,10 +59,9 @@ exclude = [
   "rustfmt.toml",
   "ruff.toml",
   "tox.ini",
+  "pytest.ini",
+  "AGENTS.md",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["python/mass_screen_rs/tests"]
 
 [tool.cibuildwheel]
 build-frontend = "build"
@@ -76,3 +77,45 @@ pre-summary-newline = true
 close-quotes-on-newline = true
 make-summary-multi-line = true
 black = true
+
+[tool.towncrier]
+package = "mass_screen_rs"
+filename = "CHANGELOG.rst"
+directory = "changelog/"
+issue_format = "`#{issue} <https://github.com/LM-SAL/mass-screen-rs/pull/{issue}>`__"
+title_format = "{version} ({project_date})"
+
+[[tool.towncrier.type]]
+directory = "breaking"
+name = "Breaking Changes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "deprecation"
+name = "Deprecations"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "removal"
+name = "Removals"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "feature"
+name = "New Features"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "bugfix"
+name = "Bug Fixes"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "doc"
+name = "Documentation"
+showcontent = true
+
+[[tool.towncrier.type]]
+directory = "trivial"
+name = "Internal Changes"
+showcontent = true

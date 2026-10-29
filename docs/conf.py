@@ -22,12 +22,23 @@ napoleon_google_docstring = False
 napoleon_use_param = False
 napoleon_use_rtype = False
 napoleon_preprocess_types = True
+napoleon_type_aliases = {"array_like": ":term:`numpy:array_like`"}
 autodoc_member_order = "bysource"
 autodoc_typehints = "description"
 autodoc_typehints_description_target = "documented"
+nitpicky = True
+# numpy documents NDArray as data and its scalar types as attributes, so the class references
+# autodoc makes from the return annotation cannot resolve.
+nitpick_ignore = [
+    ("py:class", "NDArray"),
+    ("py:class", "np.float32"),
+]
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable", None),
 }
+# Copy code without the doctest prompts.
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True
 html_theme = "furo"
 html_title = "mass-screen-rs"
