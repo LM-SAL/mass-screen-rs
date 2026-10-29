@@ -49,6 +49,7 @@ Development
 With ``torch`` installed, the parity test also checks a fresh random case against PyTorch
 directly, and ``python -m mass_screen_rs.tests.make_torch_reference`` re-records the reference.
 
-Releases: bump ``version`` in ``Cargo.toml`` (the only place it is set), merge, then tag
-``vX.Y.Z`` on ``main``; the workflow builds the wheels and the sdist and uploads them to PyPI.
-Release notes go on the `GitHub releases page <https://github.com/LM-SAL/mass-screen-rs/releases>`__.
+Releases: bump ``version`` in ``Cargo.toml`` (the only place it is set) and run
+``towncrier build --version X.Y.Z``, which moves the fragments in ``changelog/`` into
+``CHANGELOG.rst``; merge, then tag ``vX.Y.Z`` on ``main``; the workflow builds the wheels and the
+sdist and uploads them to PyPI.
