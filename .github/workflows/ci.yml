@@ -123,10 +123,19 @@ jobs:
       sdist: true
       test_extras: "tests"
       test_command: "pytest -p no:warnings --pyargs mass_screen_rs"
+      # The cp312 wheel is abi3: cibuildwheel builds it once and tests it on 3.13 to 3.15.
+      # Free-threaded Python cannot load abi3, so each free-threaded version gets its own wheel.
       targets: |
         - cp3{12,13,14,15}-manylinux_x86_64
+        - cp3{14,15}t-manylinux_x86_64
+        - target: "cp3{12,13,14,15}-manylinux_aarch64"
+          runs-on: ubuntu-24.04-arm
+        - target: "cp3{14,15}t-manylinux_aarch64"
+          runs-on: ubuntu-24.04-arm
         - cp3{12,13,14,15}-macosx_arm64
+        - cp3{14,15}t-macosx_arm64
         - cp3{12,13,14,15}-win_amd64
+        - cp3{14,15}t-win_amd64
       submodules: false
       save_artifacts: true
       upload_to_pypi: false
