@@ -34,6 +34,7 @@ docs = [
 ]
 tests = [
   "pytest",
+  "pytest-doctestplus>=1.0.0",
 ]
 dev = [
   "mass-screen-rs[tests,docs]",

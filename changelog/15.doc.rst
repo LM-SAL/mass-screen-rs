@@ -1,0 +1,1 @@
+The user guide example now runs as written and is tested with the docs.
