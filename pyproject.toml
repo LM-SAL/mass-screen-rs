@@ -60,6 +60,7 @@ exclude = [
   "ruff.toml",
   "tox.ini",
   "pytest.ini",
+  "AGENTS.md",
 ]
 
 [tool.cibuildwheel]
