@@ -2,6 +2,7 @@
 name = "mass-screen-rs"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.99"
 description = "Rust backend for the MUSE data-driven response mask (mass screen)"
 license = "BSD-3-Clause"
 repository = "https://github.com/LM-SAL/mass-screen-rs"
@@ -19,5 +20,4 @@ rayon = "1"
 [profile.release]
 lto = true
 codegen-units = 1
-# Stripped builds fail to import on macOS 27 ("mis-aligned LINKEDIT string pool")
-strip = "none"
+strip = "symbols"
