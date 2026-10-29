@@ -62,5 +62,6 @@ An agent proposes these and lists them under **Needs a person**; a person makes 
 - Fragments are `changelog/<PR>.<type>.rst`, with a counter for several of one type (`123.feature.1.rst`).
 - Development commands, including re-recording the PyTorch reference, are in "Development" in `docs/installation.rst`.
 - The Rust core is in `src/`, with its tests in `src/tests/` (`cargo test`). `pip install -e ".[dev]"` builds it through maturin; run that again after a Rust change, before testing from Python.
+- The module declares `gil_used = false`, so free-threaded Python runs it without the GIL: new Rust code keeps no shared mutable state (no `static mut`, caches or once-cells written after import).
 - `docs/design-notes.rst` holds one decision per section and names the code and tests that pin it; a change to those updates the section.
 - The mask follows the PyTorch implementation in `muse.inversions`, and muse's `mask_response` calls `mass_screen`, so its signature and output are muse's contract too. `test_torch_parity.py` checks the mask against a recorded one, and against PyTorch live when `torch` is installed; CI runs without `torch`.
