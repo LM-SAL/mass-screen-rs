@@ -11,7 +11,9 @@ Requirements
 From PyPI
 ---------
 
-Wheels are published for Linux x86-64, macOS arm64 and Windows x86-64:
+Wheels are published for Linux x86-64 and arm64, macOS arm64 and Windows x86-64. One wheel per
+platform serves CPython 3.12 and later; free-threaded CPython 3.14 and 3.15 have their own wheels
+and run without the GIL:
 
 .. code-block:: bash
 
