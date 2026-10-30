@@ -1,5 +1,5 @@
 """
-The kernel reproduces the PyTorch reference mask of ``muse.inversions``.
+The kernel reproduces the PyTorch reference mask.
 """
 
 import numpy as np

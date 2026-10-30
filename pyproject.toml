@@ -8,7 +8,7 @@ build-backend = "maturin"
 name = "mass-screen-rs"
 # The version lives in Cargo.toml only; maturin reads it from there.
 dynamic = ["version"]
-description = "Rust backend for the MUSE data-driven response mask (mass screen)"
+description = "Rust backend for a data-driven response mask (mass screen)"
 readme = "README.md"
 license = "BSD-3-Clause"
 license-files = ["LICENSE"]

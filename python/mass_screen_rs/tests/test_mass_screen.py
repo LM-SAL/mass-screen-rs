@@ -28,7 +28,7 @@ def random_case(rng, n, m, b, density=0.05):
     return response, spectra
 
 
-def test_muse_example():
+def test_worked_example():
     response = np.array([[1, 0.5, 0.1], [0.2, 1, 0.3]], dtype=np.float32)
     spectra = np.array([[3, 1], [4, 5]], dtype=np.float32)
     keep = mass_screen(response, spectra, threshold=2.24, fill_value=1)

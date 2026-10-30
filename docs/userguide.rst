@@ -32,11 +32,11 @@ Component ``m`` is kept for pixel ``b`` when
 
 after replacing every ``spectra <= 0`` by ``fill_value``: the component is kept when, scaled so
 that it does not exceed the spectrum in any spectral pixel, it can still produce ``threshold`` of
-signal where its response peaks. ``threshold`` and ``fill_value`` are in the units of ``spectra``
-(DN for MUSE), and ``fill_value`` must be ``>= 0``.
+signal where its response peaks. ``threshold`` and ``fill_value`` are in the units of ``spectra``,
+and ``fill_value`` must be ``>= 0``.
 
 A component whose response is nowhere positive is always masked. This follows the PyTorch
-reference implementation in ``muse.inversions``; the tests check the kernel against a mask
+reference implementation; the tests check the kernel against a mask
 recorded from it (see :doc:`design-notes`).
 
 Inputs are converted to C-contiguous float32 arrays, so float64 or non-contiguous arrays work at
@@ -50,10 +50,3 @@ The kernel runs on all cores through `rayon <https://github.com/rayon-rs/rayon>`
 The call releases the GIL, so other threads keep running; leave ``response`` and ``spectra``
 unchanged until it returns, as writing to an array that another thread is reading gives
 inconsistent results, as with NumPy.
-
-Use in muse
------------
-
-``muse.inversions.mask_response`` calls this kernel for ``backend="auto"`` and
-``backend="rust"`` (``"cpp"`` is accepted as an alias), and
-``backend="cpu"`` or ``"gpu"`` run the PyTorch implementation instead.

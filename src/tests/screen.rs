@@ -30,8 +30,8 @@ fn same(a: &[f32], b: &[f32]) -> bool {
 }
 
 #[test]
-fn muse_example() {
-    // The case muse/inversions/tests/test_mass_screen.py checks.
+fn worked_example() {
+    // The case the PyTorch reference's own tests check.
     let rg = [1.0, 0.5, 0.1, 0.2, 1.0, 0.3];
     let ys = [3.0, 1.0, 4.0, 5.0];
     let keep = run(&rg, &ys, 2, 3, 2, 1.0);
