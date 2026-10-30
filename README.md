@@ -1,6 +1,6 @@
 # mass-screen-rs
 
-The MUSE data-driven response mask ("mass screen") with a Rust core and a Python API.
+A data-driven response mask ("mass screen") with a Rust core and a Python API.
 
 ```bash
 pip install mass-screen-rs

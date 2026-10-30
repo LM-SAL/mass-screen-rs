@@ -12,7 +12,7 @@ The PyTorch Reference Defines The Mask
 - **Code:** ``src/screen.rs::mass_screen_core`` (``dead_cols`` and ``scale``).
 - **Tests:**
   ``python/mass_screen_rs/tests/test_torch_parity.py`` (a mask recorded from
-  ``muse.inversions.inversions._mass_screen_eager``, and a live comparison when torch is
+  the PyTorch reference, and a live comparison when torch is
   installed), ``src/tests/screen.rs::zero_column_is_masked_and_fill_value_applies``.
 
 Current Behavior
@@ -26,9 +26,9 @@ response is nowhere positive is masked for every pixel.
 Rationale
 ~~~~~~~~~
 
-The old C++ mask in muse diverged from the reference in two places: it kept every component with
+The old C++ mask diverged from the reference in two places: it kept every component with
 no response at all, and it masked every component whose largest response was below ``1e-9`` (an
-epsilon guarding a division). On a real MUSE run those two cases covered 13.7 % of the mask
+epsilon guarding a division). On a real run those two cases covered 13.7 % of the mask
 cells. The reference is the documented algorithm, so the kernel follows it; the rule is
 scale-invariant, so no epsilon is needed.
 
@@ -52,7 +52,7 @@ Current Behavior
 
 1. Only the entries with ``rhs > 0`` are kept, per row, as (column, value) pairs. With
    ``fill_value >= 0`` every screened spectrum value is non-negative, so a zero or negative entry
-   can never mask a cell. A MUSE response is about 3 % non-zero.
+   can never mask a cell. A typical response is about 3 % non-zero.
 2. Rows run in order of decreasing sum of ``rhs``, so the rows that mask most run first, and a
    row is skipped for a tile of pixels when the tile's smallest spectrum value is at least the
    row's largest ``rhs``.

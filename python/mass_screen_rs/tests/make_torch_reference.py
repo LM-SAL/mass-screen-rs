@@ -19,7 +19,7 @@ CASES = {
 
 def torch_mask(response, spectra, threshold, fill_value):
     """
-    Return the mask of ``muse.inversions.inversions._mass_screen_eager``, computed the same way.
+    Return the mask of the PyTorch reference, computed the same way.
     """
     import torch  # noqa: PLC0415 - only the recording and the live test need torch
 
