@@ -1,1 +1,0 @@
-Building mass-screen-rs from source now needs Rust 1.99 or later; macOS 27 refuses to load an extension stripped by Rust 1.97 or older ("mis-aligned LINKEDIT string pool").
