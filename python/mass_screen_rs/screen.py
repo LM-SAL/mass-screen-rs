@@ -1,5 +1,5 @@
 """
-Python API for the mass-screen-rs Rust backend.
+Response masks for spectral inversions.
 """
 
 from __future__ import annotations
@@ -40,9 +40,9 @@ def mass_screen(
     spectra : array_like
         Spectra of shape ``[n, b]``: spectral pixel × image pixel.
     threshold : float
-        Smallest signal, in the units of ``spectra``, a component must be able to produce.
+        Minimum required signal, in the units of ``spectra``. Must be finite.
     fill_value : float
-        Replaces the ``spectra`` values that are ``<= 0``; must be ``>= 0``.
+        Finite, non-negative replacement for non-positive samples.
     workers : int, optional
         Number of Rayon threads for this call. By default use the active
         worker context or Rayon's default pool.
@@ -51,10 +51,6 @@ def mass_screen(
     -------
     numpy.ndarray
         float32 array of shape ``[b, m]``: 1.0 where a component is kept, NaN where masked.
-
-    Notes
-    -----
-    Set ``RAYON_NUM_THREADS`` before starting Python to configure Rayon's default pool.
     """
     response = np.ascontiguousarray(response, dtype=np.float32)
     spectra = np.ascontiguousarray(spectra, dtype=np.float32)

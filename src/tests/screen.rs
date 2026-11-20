@@ -31,7 +31,6 @@ fn same(a: &[f32], b: &[f32]) -> bool {
 
 #[test]
 fn worked_example() {
-    // The case the PyTorch reference's own tests check.
     let rg = [1.0, 0.5, 0.1, 0.2, 1.0, 0.3];
     let ys = [3.0, 1.0, 4.0, 5.0];
     let keep = run(&rg, &ys, 2, 3, 2, 1.0);
@@ -49,7 +48,6 @@ fn zero_column_is_masked_and_fill_value_applies() {
 
 #[test]
 fn many_tiles_and_blocks_match_the_dense_rule() {
-    // Exercises partial tiles (b % BT != 0) and several column blocks.
     let (n, m, b) = (7, 2 * MBLK + 5, 3 * BT + 9);
     let (rg, ys) = random_case(n, m, b);
     let keep = run(&rg, &ys, n, m, b, 0.25);
@@ -72,9 +70,7 @@ fn many_tiles_and_blocks_match_the_dense_rule() {
 
 #[test]
 fn avx2_build_matches_the_baseline_build() {
-    // NaN spectra, and enough rows that the early-stop check runs; a threshold of 50 masks almost
-    // every cell, so tasks stop early. Off x86-64, and on a CPU without AVX2, both calls run the
-    // baseline build.
+    // The high threshold exercises early termination, including on the partial tile.
     let (n, m, b) = (100, 2 * MBLK + 5, 3 * BT + 9);
     let (rg, mut ys) = random_case(n, m, b);
     ys.iter_mut().step_by(97).for_each(|y| *y = f32::NAN);

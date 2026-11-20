@@ -1,0 +1,1 @@
+Clarified how the response mask is computed and how to select a worker count.

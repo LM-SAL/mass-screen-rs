@@ -1,4 +1,4 @@
-//! Python entry point: validation, the output array, and the GIL release around the kernel.
+//! Python bindings for the response mask.
 use numpy::{PyArray2, PyArrayMethods, PyReadonlyArray2, PyUntypedArrayMethods};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{pyfunction, Bound, PyResult, Python};
@@ -8,11 +8,8 @@ use crate::workers::{self, WorkerPool};
 
 /// Mask the VDEM components a set of spectra cannot constrain.
 ///
-/// `response` is `[n, m]` and `spectra` is `[n, b]`, both C-contiguous float32. Returns a float32
-/// array of shape `[b, m]` holding 1.0 where a component is kept and NaN where it is masked:
-/// component `m` is kept for pixel `b` when `min_n(spectra[n, b] / response[n, m]) *
-/// max_n(response[n, m]) >= threshold`, after replacing `spectra <= 0` by `fill_value`. A
-/// component whose response is nowhere positive is always masked.
+/// Accepts C-contiguous float32 inputs of shapes `[n, m]` and `[n, b]`.
+/// Returns a `[b, m]` float32 mask (1.0 for kept components, NaN for masked ones).
 #[pyfunction]
 #[pyo3(signature = (response, spectra, threshold, fill_value, pool=None))]
 pub(crate) fn mass_screen<'py>(

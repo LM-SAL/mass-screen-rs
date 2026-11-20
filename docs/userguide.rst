@@ -4,10 +4,10 @@ User Guide
 Masking a response matrix
 -------------------------
 
-:func:`~mass_screen_rs.mass_screen` takes the response matrix ``response`` of shape ``[n, m]``
-(spectral pixel × VDEM component) and the spectra ``spectra`` of shape ``[n, b]`` (spectral pixel
-× image pixel), and returns a float32 array of shape ``[b, m]`` holding ``1.0`` where a component
-is kept for a pixel and ``NaN`` where it is masked.
+Each row of the response matrix and spectra represents a spectral pixel.
+Their columns represent VDEM components and image pixels, respectively.
+:func:`~mass_screen_rs.mass_screen` returns one float32 row per image pixel,
+with ``1.0`` for each component kept and ``NaN`` for each component masked.
 
 .. code-block:: python
 
@@ -30,30 +30,21 @@ Component ``m`` is kept for pixel ``b`` when
 
    min_n(spectra[n, b] / response[n, m]) * max_n(response[n, m]) >= threshold
 
-after replacing every ``spectra <= 0`` by ``fill_value``: the component is kept when, scaled so
-that it does not exceed the spectrum in any spectral pixel, it can still produce ``threshold`` of
-signal where its response peaks. ``threshold`` and ``fill_value`` are in the units of ``spectra``,
-and ``fill_value`` must be ``>= 0``.
+after replacing non-positive samples with ``fill_value``. Scaled to fit the
+spectrum at every spectral pixel, the component must still produce at least
+``threshold`` at its peak. Both settings must be finite and use the units of the spectra. The fill value must be non-negative.
+A component with no positive response is always masked.
 
-A component whose response is nowhere positive is always masked. This follows the PyTorch
-reference implementation; the tests check the kernel against a mask
-recorded from it (see :doc:`design-notes`).
-
-Inputs are converted to C-contiguous float32 arrays, so float64 or non-contiguous arrays work at
-the cost of a copy. Passing float32 C-contiguous arrays avoids it.
-
-The call releases the GIL. Other threads can run while it reads the inputs, so keep
-``response`` and ``spectra`` unchanged until it returns.
+C-contiguous float32 inputs avoid a copy. Other threads can run during the
+call, so keep both arrays unchanged until it returns.
 
 .. _stage-worker-counts:
 
-Stage worker counts
--------------------
+Choosing a worker count
+-----------------------
 
-Pass a positive integer as ``workers=`` to :func:`~mass_screen_rs.mass_screen` for one call.
-For a stage with repeated calls, :func:`~mass_screen_rs.set_workers` lets them reuse one Rayon pool.
-An explicit count overrides the stage setting for that call. For example, these calls
-use four workers and one worker respectively.
+Use :func:`~mass_screen_rs.set_workers` to share a Rayon thread pool across calls.
+Pass a positive ``workers`` count to :func:`~mass_screen_rs.mass_screen` to override it for one call.
 
 >>> from mass_screen_rs import set_workers
 >>> with set_workers(4):
@@ -61,11 +52,9 @@ use four workers and one worker respectively.
 ...     single_worker_keep = mass_screen(response, spectra, threshold=2.24, fill_value=0.25, workers=1)
 >>> np.testing.assert_array_equal(keep, single_worker_keep)
 
-Leaving the block restores the previous setting. Each package manages its own pool.
-If stages run concurrently, budget workers across the active pools. For a stage running
-in another process, enter the context in that process.
+Leaving the block restores the previous setting. With no count or active context,
+a call uses Rayon's default pool. To size that pool, set ``RAYON_NUM_THREADS``
+before starting Python.
 
-With ``workers=None`` (the default), a call uses the active context or falls back to
-Rayon's default pool. Set ``RAYON_NUM_THREADS`` before starting Python to configure
-that fallback, for example ``RAYON_NUM_THREADS=4 python pipeline.py``. When unset,
-Rayon chooses the default size from the available CPUs.
+Each package manages its own pool. Budget threads across concurrent calls and
+set the count in each child process.

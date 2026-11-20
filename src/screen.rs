@@ -2,9 +2,9 @@
 use rayon::prelude::*;
 use std::slice;
 
-/// Image pixels per tile: a column's flags are one 64-byte line, one f32 compare covers them.
+/// A column's 64 one-byte flags fit in a single cache line.
 pub(crate) const BT: usize = 64;
-/// Columns per block: the fail block is MBLK * BT = 512 KiB, which stays in L2 across all rows.
+/// A block uses 512 KiB of flags to allow reuse in L2 across rows.
 pub(crate) const MBLK: usize = 8192;
 
 pub(crate) fn column_max(rg: &[f32], m: usize) -> Vec<f32> {
@@ -16,7 +16,7 @@ pub(crate) fn column_max(rg: &[f32], m: usize) -> Vec<f32> {
         }
         a
     };
-    // A partial maximum per chunk of rows, not per row: each partial is an m-float vector.
+    // Chunking limits the number of temporary m-element vectors.
     let rows_per_chunk = (rg.len() / m)
         .div_ceil(4 * rayon::current_num_threads())
         .max(1);
@@ -31,7 +31,7 @@ struct CsrRow {
     val: Vec<f32>,
     /// `blk[q]..blk[q + 1]` is the slice of `idx`/`val` inside column block `q`.
     blk: Vec<u32>,
-    /// Sum of `val`: rows with large rhs mask cells earliest, so they run first.
+    /// Rows with larger sums run first because they are more likely to rule out cells.
     score: f64,
     max_val: f32,
 }
@@ -63,9 +63,9 @@ fn csr_row(rg_row: &[f32], scale: &[f32], nblocks: usize) -> CsrRow {
 }
 
 struct SyncPtr(*mut f32);
+// SAFETY: each task writes only its own pixel tile and column block.
 unsafe impl Sync for SyncPtr {}
 
-/// Whether this CPU can run the AVX2 build of the task loop.
 fn has_avx2() -> bool {
     #[cfg(target_arch = "x86_64")]
     {
@@ -94,8 +94,7 @@ pub(crate) fn mass_screen_core(
     mass_screen_with(rg, ys, keep, n, m, b, threshold, fill_value, true);
 }
 
-/// `mass_screen_core`, running the AVX2 build of the task loop when `allow_avx2` is set and the
-/// CPU has AVX2, and the baseline build otherwise.
+/// Tests can disable AVX2 to compare both implementations on the same CPU.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn mass_screen_with(
     rg: &[f32],
@@ -145,8 +144,7 @@ pub(crate) fn mass_screen_with(
     };
     let avx2 = allow_avx2 && has_avx2();
 
-    // One flag block per worker, reused across its tasks: a fresh zeroed block per task costs
-    // a page fault per 4 KiB and showed as a 50 % slowdown on 32 threads.
+    // Reuse scratch across tasks to avoid repeatedly faulting in fresh pages.
     (0..ntiles * nblocks).into_par_iter().for_each_init(
         || vec![0u8; MBLK * BT],
         |fail, task| {
@@ -174,8 +172,7 @@ struct Tasks<'a> {
 }
 
 impl Tasks<'_> {
-    /// Masks tile `task / nblocks` of `BT` image pixels against column block `task % nblocks`,
-    /// with `fail` as scratch. Always inlined, so `run_avx2` gets its own build of it.
+    /// Inline the task loop so the AVX2 entry point can vectorize it for that CPU.
     #[inline(always)]
     fn run(&self, fail: &mut [u8], task: usize) {
         let Tasks {
@@ -224,8 +221,7 @@ impl Tasks<'_> {
                     *f |= u8::from(y < v);
                 }
             }
-            // Stop once every column of the block has failed for every pixel of the tile. The
-            // check costs one pass over fail, so it runs once per ~4 passes' worth of updates.
+            // Scanning every flag is worthwhile only after enough updates could have changed it.
             since_recount += hi - lo;
             if since_recount >= 4 * mb {
                 since_recount = 0;
@@ -249,8 +245,6 @@ impl Tasks<'_> {
         }
     }
 
-    /// `run` built for AVX2, whose 256-bit vectors update twice as many flags per instruction as
-    /// the 128-bit SSE2 of baseline x86-64.
     #[cfg(target_arch = "x86_64")]
     #[target_feature(enable = "avx2")]
     fn run_avx2(&self, fail: &mut [u8], task: usize) {

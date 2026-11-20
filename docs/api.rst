@@ -6,6 +6,6 @@ API Reference
 Worker configuration
 --------------------
 
-See :ref:`stage-worker-counts` for configuration precedence and examples.
+For usage examples, see :ref:`stage-worker-counts`.
 
 .. autofunction:: mass_screen_rs.set_workers
