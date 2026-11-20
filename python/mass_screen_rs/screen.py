@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ._mass_screen_rs import mass_screen as _mass_screen
+from ._workers import resolve_pool
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike, NDArray
@@ -17,7 +18,12 @@ __all__ = ["mass_screen"]
 
 
 def mass_screen(
-    response: ArrayLike, spectra: ArrayLike, *, threshold: float, fill_value: float
+    response: ArrayLike,
+    spectra: ArrayLike,
+    *,
+    threshold: float,
+    fill_value: float,
+    workers: int | None = None,
 ) -> NDArray[np.float32]:
     """
     Mask the VDEM components a set of spectra cannot constrain.
@@ -37,6 +43,9 @@ def mass_screen(
         Smallest signal, in the units of ``spectra``, a component must be able to produce.
     fill_value : float
         Replaces the ``spectra`` values that are ``<= 0``; must be ``>= 0``.
+    workers : int, optional
+        Number of Rayon threads for this call. By default use the active
+        worker context or Rayon's default pool.
 
     Returns
     -------
@@ -45,11 +54,13 @@ def mass_screen(
 
     Notes
     -----
-    The kernel runs on all cores through rayon; ``RAYON_NUM_THREADS`` caps it.
+    Set ``RAYON_NUM_THREADS`` before starting Python to configure Rayon's default pool.
     """
     response = np.ascontiguousarray(response, dtype=np.float32)
     spectra = np.ascontiguousarray(spectra, dtype=np.float32)
     if (response.ndim, spectra.ndim) != (2, 2):
         msg = f"response and spectra must be 2-D, got shapes {response.shape} and {spectra.shape}"
         raise ValueError(msg)
-    return _mass_screen(response, spectra, float(threshold), float(fill_value))
+    return _mass_screen(
+        response, spectra, float(threshold), float(fill_value), resolve_pool(workers)
+    )

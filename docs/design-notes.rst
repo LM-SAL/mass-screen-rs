@@ -120,3 +120,14 @@ Cost
 The task loop is in the extension twice, and ``mass_screen_with`` takes a flag the tests use to
 force the baseline build. Features beyond AVX2 that a ``target-cpu=native`` build may use, such as
 AVX-512, are not used.
+
+Worker pools
+------------
+
+A call with ``workers=n`` uses a local Rayon pool of that size.
+If the active pool already has that size, the call reuses it.
+``set_workers(n)`` creates one pool for a block of calls in the current Python
+context. The binding runs the parallel kernel inside the selected pool.
+Calls outside either setting use Rayon's default. Separate processes must enter
+their own context. The pool and context behavior are covered by the Rust
+worker-pool test and the Python worker tests.

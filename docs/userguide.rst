@@ -50,3 +50,16 @@ The kernel runs on all cores through `rayon <https://github.com/rayon-rs/rayon>`
 The call releases the GIL, so other threads keep running; leave ``response`` and ``spectra``
 unchanged until it returns, as writing to an array that another thread is reading gives
 inconsistent results, as with NumPy.
+
+Stage worker counts
+-------------------
+
+Use a positive ``workers`` argument on ``mass_screen`` for one call.
+For repeated calls, create the pool once in the stage that runs them::
+
+    from mass_screen_rs import mass_screen, set_workers
+
+    with set_workers(4):
+        keep = mass_screen(response, spectra, threshold=threshold, fill_value=fill_value)
+
+The pool applies to ``mass_screen_rs`` calls made in that context.
