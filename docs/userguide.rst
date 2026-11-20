@@ -42,24 +42,30 @@ recorded from it (see :doc:`design-notes`).
 Inputs are converted to C-contiguous float32 arrays, so float64 or non-contiguous arrays work at
 the cost of a copy. Passing float32 C-contiguous arrays avoids it.
 
-Threads
--------
+The call releases the GIL. Other threads can run while it reads the inputs, so keep
+``response`` and ``spectra`` unchanged until it returns.
 
-The kernel runs on all cores through `rayon <https://github.com/rayon-rs/rayon>`_;
-``RAYON_NUM_THREADS`` caps the thread count and must be set before the first call.
-The call releases the GIL, so other threads keep running; leave ``response`` and ``spectra``
-unchanged until it returns, as writing to an array that another thread is reading gives
-inconsistent results, as with NumPy.
+.. _stage-worker-counts:
 
 Stage worker counts
 -------------------
 
-Use a positive ``workers`` argument on ``mass_screen`` for one call.
-For repeated calls, create the pool once in the stage that runs them::
+Pass a positive integer as ``workers=`` to :func:`~mass_screen_rs.mass_screen` for one call.
+For a stage with repeated calls, :func:`~mass_screen_rs.set_workers` lets them reuse one Rayon pool.
+An explicit count overrides the stage setting for that call. For example, these calls
+use four workers and one worker respectively.
 
-    from mass_screen_rs import mass_screen, set_workers
+>>> from mass_screen_rs import set_workers
+>>> with set_workers(4):
+...     keep = mass_screen(response, spectra, threshold=2.24, fill_value=0.25)
+...     single_worker_keep = mass_screen(response, spectra, threshold=2.24, fill_value=0.25, workers=1)
+>>> np.testing.assert_array_equal(keep, single_worker_keep)
 
-    with set_workers(4):
-        keep = mass_screen(response, spectra, threshold=threshold, fill_value=fill_value)
+Leaving the block restores the previous setting. Each package manages its own pool.
+If stages run concurrently, budget workers across the active pools. For a stage running
+in another process, enter the context in that process.
 
-The pool applies to ``mass_screen_rs`` calls made in that context.
+With ``workers=None`` (the default), a call uses the active context or falls back to
+Rayon's default pool. Set ``RAYON_NUM_THREADS`` before starting Python to configure
+that fallback, for example ``RAYON_NUM_THREADS=4 python pipeline.py``. When unset,
+Rayon chooses the default size from the available CPUs.
