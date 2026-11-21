@@ -2,6 +2,8 @@
 use rayon::prelude::*;
 use std::slice;
 
+use crate::workers::{self, WorkerPool};
+
 /// A column's 64 one-byte flags fit in a single cache line.
 pub(crate) const BT: usize = 64;
 /// A block uses 512 KiB of flags to allow reuse in L2 across rows.
@@ -17,9 +19,10 @@ pub(crate) fn column_max(rg: &[f32], m: usize) -> Vec<f32> {
         a
     };
     // Chunking limits the number of temporary m-element vectors.
-    let rows_per_chunk = (rg.len() / m)
-        .div_ceil(4 * rayon::current_num_threads())
-        .max(1);
+    let workers = rayon::current_num_threads();
+    #[cfg(test)]
+    crate::tests::workers::OBSERVED_WIDTH.set(Some(workers));
+    let rows_per_chunk = (rg.len() / m).div_ceil(4 * workers).max(1);
     rg.par_chunks(m * rows_per_chunk)
         .map(|chunk| chunk.chunks(m).fold(vec![f32::NEG_INFINITY; m], merge))
         .reduce(|| vec![f32::NEG_INFINITY; m], |a, b| merge(a, &b))
@@ -90,8 +93,11 @@ pub(crate) fn mass_screen_core(
     b: usize,
     threshold: f32,
     fill_value: f32,
+    pool: Option<&WorkerPool>,
 ) {
-    mass_screen_with(rg, ys, keep, n, m, b, threshold, fill_value, true);
+    workers::run(pool, || {
+        mass_screen_with(rg, ys, keep, n, m, b, threshold, fill_value, true);
+    });
 }
 
 /// Tests can disable AVX2 to compare both implementations on the same CPU.

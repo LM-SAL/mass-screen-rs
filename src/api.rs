@@ -4,7 +4,7 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::{pyfunction, Bound, PyResult, Python};
 
 use crate::screen::mass_screen_core;
-use crate::workers::{self, WorkerPool};
+use crate::workers::WorkerPool;
 
 /// Mask the VDEM components a set of spectra cannot constrain.
 ///
@@ -44,10 +44,6 @@ pub(crate) fn mass_screen<'py>(
     let out = unsafe { PyArray2::<f32>::new(py, [b, m], false) };
     let keep = unsafe { out.as_slice_mut() }
         .map_err(|_| PyValueError::new_err("could not allocate the mask"))?;
-    py.detach(|| {
-        workers::run(pool, || {
-            mass_screen_core(rg, ys, keep, n, m, b, threshold, fill_value)
-        })
-    });
+    py.detach(|| mass_screen_core(rg, ys, keep, n, m, b, threshold, fill_value, pool));
     Ok(out)
 }

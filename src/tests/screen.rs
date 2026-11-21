@@ -18,7 +18,7 @@ fn random_case(n: usize, m: usize, b: usize) -> (Vec<f32>, Vec<f32>) {
 
 fn run(rg: &[f32], ys: &[f32], n: usize, m: usize, b: usize, fill: f32) -> Vec<f32> {
     let mut keep = vec![0.0; b * m];
-    mass_screen_core(rg, ys, &mut keep, n, m, b, 2.24, fill);
+    mass_screen_core(rg, ys, &mut keep, n, m, b, 2.24, fill, None);
     keep
 }
 
