@@ -1,4 +1,4 @@
-# pre-commit.ci has no Rust toolchain: the cargo hooks run in the codestyle CI job instead.
+# The rust CI job runs these checks because pre-commit.ci lacks a Rust toolchain.
 ci:
   skip: [cargo-fmt, cargo-clippy, cargo-test]
 repos:

@@ -1,10 +1,6 @@
 Design notes
 ============
 
-Design decisions and known limitations, one section per decision: what the code does, why, and
-what it costs. Each section names the code and the tests that pin the behavior, so a change to
-either is a change to the decision.
-
 The PyTorch Reference Defines The Mask
 --------------------------------------
 
@@ -26,17 +22,16 @@ response is nowhere positive is masked for every pixel.
 Rationale
 ~~~~~~~~~
 
-The old C++ mask diverged from the reference in two places: it kept every component with
-no response at all, and it masked every component whose largest response was below ``1e-9`` (an
-epsilon guarding a division). On a real run those two cases covered 13.7 % of the mask
-cells. The reference is the documented algorithm, so the kernel follows it; the rule is
-scale-invariant, so no epsilon is needed.
+The old C++ mask kept columns with no response and masked columns with a positive
+maximum below ``1e-9``. Those cases covered 13.7 % of mask cells on a real run.
+Scaling a positive response column leaves the rule unchanged, so its magnitude
+alone cannot disqualify it.
 
 Cost
 ~~~~
 
-The two formulas round differently, so a cell exactly on the threshold could in principle differ
-from the reference. None did on a real run of 352 million cells, nor on the recorded cases.
+Rounding can affect cells at the threshold. The formulas agreed on all
+352 million cells of a real run and on the recorded test cases.
 
 Sparse, Pixel-Major Kernel
 --------------------------
@@ -50,17 +45,16 @@ Sparse, Pixel-Major Kernel
 Current Behavior
 ~~~~~~~~~~~~~~~~
 
-1. Only the entries with ``rhs > 0`` are kept, per row, as (column, value) pairs. With
-   ``fill_value >= 0`` every screened spectrum value is non-negative, so a zero or negative entry
-   can never mask a cell. A typical response is about 3 % non-zero.
-2. Rows run in order of decreasing sum of ``rhs``, so the rows that mask most run first, and a
-   row is skipped for a tile of pixels when the tile's smallest spectrum value is at least the
-   row's largest ``rhs``.
-3. The mask flags are laid out ``[column][64 pixels]``: one response entry updates the flags of 64
-   image pixels with one vector compare, whatever the column order of the response. Work is split
-   into tasks of 64 pixels × 8192 columns so a task's flag block (512 KiB) stays in L2.
-4. A task stops early once every column of its block has failed for every pixel of its tile; the
-   check runs once per four blocks' worth of updates.
+1. Each row stores the columns and values for ``rhs > 0``. Only these entries
+   can mask a cell because the fill value is non-negative. A typical response
+   is about 3 % non-zero.
+2. Rows with larger sums of ``rhs`` run first to eliminate cells early. If the
+   smallest spectrum value in a tile is at least the largest ``rhs`` in the
+   row, the task can skip that row.
+3. Each task handles 64 pixels by 8192 columns. A column's 64 adjacent flags
+   let the compiler vectorize comparisons across pixels. The block uses 512 KiB.
+4. After four blocks' worth of updates, the task checks whether every cell
+   has failed and can stop if so.
 
 Rationale
 ~~~~~~~~~
@@ -69,10 +63,12 @@ The old C++ mask scaled the whole response once and then, for every image pixel,
 entry of every row, recounting the surviving columns after each row. That streams the scaled
 response (1.3 GB on a real run) once per pixel and does 97 % of its compares against zeros.
 
+.. _screen-performance:
+
 Performance
 ~~~~~~~~~~~
 
-On a 16-core Ryzen 9 9950X, 32 threads:
+Times on a 16-core Ryzen 9 9950X using 32 threads.
 
 ===================================  =====================  ===============
 Inputs (n × m, b)                    old C++/OpenMP mask    mass-screen-rs
@@ -82,9 +78,8 @@ synthetic, 3072 × 246225, 4444 px    188.9 s                0.53 s
 synthetic, 3072 × 7035, 561 px       0.48 s                 0.006 s
 ===================================  =====================  ===============
 
-The x86-64 wheels run a build of the task loop compiled for AVX2 on CPUs that have it (see "AVX2
-At Runtime"). Before that build was added, they were about 30 % slower than a
-``target-cpu=native`` build; how much of that gap it closes has not been measured.
+Before runtime AVX2 selection, the x86-64 wheels were about 30 % slower than a
+``target-cpu=native`` build. The remaining gap has not been measured.
 
 Cost
 ~~~~
@@ -120,3 +115,15 @@ Cost
 The task loop is in the extension twice, and ``mass_screen_with`` takes a flag the tests use to
 force the baseline build. Features beyond AVX2 that a ``target-cpu=native`` build may use, such as
 AVX-512, are not used.
+
+Worker pools
+------------
+
+``set_workers`` stores a Rayon pool in the current Python context. A call with the
+same worker count reuses it. A different count creates a pool for that call.
+``test_call_and_scoped_workers_reach_the_kernel`` checks which pool the binding
+receives. ``the_kernel_inherits_the_selected_pool`` checks the thread count used for the mask's column maxima.
+
+The worker helpers record the process ID on first use. A forked child inherits
+the pool handles without their worker threads.
+``test_forked_child_rejects_parent_workers`` covers implicit and explicit counts.

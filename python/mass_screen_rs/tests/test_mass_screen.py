@@ -10,7 +10,7 @@ from mass_screen_rs import mass_screen
 
 def reference(response, spectra, threshold, fill_value):
     """
-    Evaluate the mask rule in numpy, one cell at a time.
+    Evaluate the dense mask rule with NumPy broadcasting.
     """
     response = np.asarray(response, dtype=np.float32)
     spectra = np.asarray(spectra, dtype=np.float32)

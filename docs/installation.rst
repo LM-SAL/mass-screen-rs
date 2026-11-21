@@ -29,15 +29,12 @@ From source
    pip install maturin
    maturin develop --release
 
-The x86-64 wheels target baseline x86-64 so they run on any x86-64 CPU, and switch to a build of
-the kernel compiled for AVX2 on CPUs that have it. A source build with
+On x86-64 the wheel selects AVX2 when the CPU supports it. To build for the
+current CPU, use the following command. See the :ref:`performance measurements <screen-performance>` for timings.
 
 .. code-block:: bash
 
    RUSTFLAGS="-C target-cpu=native" maturin develop --release
-
-is compiled for the CPU it is built on, which can be faster still; see "Performance" in the design
-notes.
 
 Development
 -----------
@@ -45,10 +42,10 @@ Development
 .. code-block:: bash
 
    pip install maturin
-   maturin develop --release --extras tests  # build into the active environment
-   cargo test                                # Rust unit tests
-   pytest --pyargs mass_screen_rs            # Python tests, including parity with the recorded PyTorch mask
-   prek run --all-files                      # lint hooks (ruff, docformatter, cargo fmt, clippy, cargo test)
+   maturin develop --release --extras tests
+   cargo test
+   pytest --pyargs mass_screen_rs
+   prek run --all-files
 
 With ``torch`` installed, the parity test also checks a fresh random case against PyTorch
 directly, and ``python -m mass_screen_rs.tests.make_torch_reference`` re-records the reference.
